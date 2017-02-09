@@ -8,6 +8,7 @@ import kivy.utils
 
 from kivy.config import Config
 Config.set('kivy', 'log_level', 'debug')
+Config.set('input', 'mouse', 'mouse,disable_multitouch')
 Config.set('graphics', 'window_state', 'maximized')
 
 from kivy.app import App
@@ -114,12 +115,20 @@ class MediaPlayer(App):
             else: Window.fullscreen = 'auto'
             self.fullscreen = not self.fullscreen
     
+    def on_motion(self, *args):
+        if self.player: self.player.on_motion(*args)
+    
     def play_media(self, uri):
         self.player = VideoPlayer(mediaplayer = self, source = uri, state = 'play', options = {'allow_stretch': True})
+
+        self.master.remove_widget(self.menucontainer)
         self.master.add_widget(self.player)
     
     def close_media(self):
+        self.player.stop()
         self.master.remove_widget(self.player)
+        self.master.add_widget(self.menucontainer)
+
         self.player = None
 
     def build_main_ui(self):        
@@ -146,11 +155,13 @@ class MediaPlayer(App):
         #    self.icon = 'logo/logo-128x128.png'
         #else:
         #    self.icon = 'logo/logo-1024x1024.png'
+        
+        Window.bind(on_motion = self.on_motion, mouse_pos = self.on_motion)
 
         self.master = FloatLayout()
         self.player = None
 
         # Hijacked until connection UI is done
-        self.connect('localhost:3000')
+        self.connect('cedar.immanuel.crosscommunity.com:3000')
         
         return self.master    

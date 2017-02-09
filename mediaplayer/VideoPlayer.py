@@ -6,6 +6,7 @@ from kivy.properties import ObjectProperty, StringProperty, BooleanProperty, Num
 from kivy.animation import Animation
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.progressbar import ProgressBar
 from kivy.uix.label import Label
 from kivy.uix.video import Video
@@ -14,37 +15,28 @@ from kivy.factory import Factory
 from kivy.logger import Logger
 from kivy.clock import Clock
 from kivy.lang import Builder
+from kivy.config import Config
+from kivy.core.window import Window
+
+from .Settings import settings
 
 Builder.load_string('''
 <CMPVideoPlayerPreview>:
-    pos_hint: {'x': 0, 'y': 0}
+    pos_hint: {{'x': 0, 'y': 0}}
     image_overlay_play: 'atlas://data/images/defaulttheme/player-play-overlay'
     image_loading: 'data/images/image-loading.gif'
     Image:
         source: root.source
         color: (.5, .5, .5, 1)
-        pos_hint: {'x': 0, 'y': 0}
+        pos_hint: {{'x': 0, 'y': 0}}
     Image:
         source: root.image_overlay_play if not root.click_done else root.image_loading
-        pos_hint: {'x': 0, 'y': 0}
-
-
-<CMPVideoPlayerAnnotation>:
-    canvas.before:
-        Color:
-            rgba: self.annotation['bgcolor'] if 'bgcolor' in self.annotation else (0, 0, 0, 0.8)
-        BorderImage:
-            pos: self.pos
-            size: self.size
-            source: self.annotation['bgsource'] if 'bgsource' in self.annotation else None
-            border: self.annotation['border'] if 'border' in self.annotation else (0, 0, 0, 0)
-    size_hint: self.annotation['size_hint'] if 'size_hint' in self.annotation else (None, None)
-    size: self.annotation['size'] if 'size' in self.annotation else (self.texture_size[0] + 20, self.texture_size[1] + 20)
-    pos_hint: self.annotation['pos_hint'] if 'pos_hint' in self.annotation else {'center_x': .5, 'y': .05}
+        pos_hint: {{'x': 0, 'y': 0}}
 
 <CMPVideoPlayer>:
     container: container
-    cols: 1
+    controls: controls
+    anchor_y: 'bottom'
     
     canvas:
         Color:
@@ -54,78 +46,54 @@ Builder.load_string('''
             pos: self.pos
 
     FloatLayout:
-        cols: 1
         id: container
+        size_hint: (1, 1)
+        
+    FloatLayout:
+        id: controls    
+        size_hint: (1, 1)
 
-    GridLayout:
-        rows: 1
-        size_hint_y: None
-        height: '44dp'
+        AnchorLayout:
+            size_hint: (1, 1)
+            anchor_x: 'right'
+            anchor_y: 'top'
+            padding: 16
+        
+            CMPVideoPlayerClose:
+                size_hint: (None, None)
+                size: self.texture_size
+                video: root
+                markup: True
+                text: "{settings.icon_close}"
 
-        CMPVideoPlayerClose:
-            size_hint_x: None
-            video: root
-            width: '44dp'
-            source: root.image_stop
-            allow_stretch: True
+        AnchorLayout:
+            size_hint: (1, 1)
+            anchor_x: 'center'
+            anchor_y: 'bottom'
 
-        CMPVideoPlayerPlayPause:
-            size_hint_x: None
-            video: root
-            width: '44dp'
-            source: root.image_pause if root.state == 'play' else root.image_play
-            allow_stretch: True
+            GridLayout:
+                rows: 1
+                size_hint: (0.8, None)
+                height: '128dp'
 
-        Widget:
-            size_hint_x: None
-            width: 5
+                CMPVideoPlayerPlayPause:
+                    size_hint_x: None
+                    video: root
+                    markup: True
+                    text: "{settings.icon_pause}" if root.state == 'play' else "{settings.icon_play}"
 
-        CMPVideoPlayerProgressBar:
-            video: root
-            max: max(root.duration, root.position, 1)
-            value: root.position
+                Widget:
+                    size_hint_x: None
+                    width: 5
 
-        Widget:
-            size_hint_x: None
-            width: 10
-''')
+                CMPVideoPlayerProgressBar:
+                    video: root
+                    max: max(root.duration, root.position, 1)
+                    value: root.position
 
+'''.format(settings = settings))
 
-class CMPVideoPlayerVolume(Image):
-    video = ObjectProperty(None)
-
-    def on_touch_down(self, touch):
-        if not self.collide_point(*touch.pos):
-            return False
-        touch.grab(self)
-        # save the current volume and delta to it
-        touch.ud[self.uid] = [self.video.volume, 0]
-        return True
-
-    def on_touch_move(self, touch):
-        if touch.grab_current is not self:
-            return
-        # calculate delta
-        dy = abs(touch.y - touch.oy)
-        if dy > 10:
-            dy = min(dy - 10, 100)
-            touch.ud[self.uid][1] = dy
-            self.video.volume = dy / 100.
-        return True
-
-    def on_touch_up(self, touch):
-        if touch.grab_current is not self:
-            return
-        touch.ungrab(self)
-        dy = abs(touch.y - touch.oy)
-        if dy < 10:
-            if self.video.volume > 0:
-                self.video.volume = 0
-            else:
-                self.video.volume = 1.
-
-
-class CMPVideoPlayerPlayPause(Image):
+class CMPVideoPlayerPlayPause(Label):
     video = ObjectProperty(None)
 
     def on_touch_down(self, touch):
@@ -138,7 +106,7 @@ class CMPVideoPlayerPlayPause(Image):
             return True
 
 
-class CMPVideoPlayerClose(Image):
+class CMPVideoPlayerClose(Label):
     video = ObjectProperty(None)
 
     def on_touch_down(self, touch):
@@ -247,38 +215,7 @@ class CMPVideoPlayerPreview(FloatLayout):
         return True
 
 
-class CMPVideoPlayerAnnotation(Label):
-    '''Annotation class used for creating annotation labels.
-
-    Additional keys are available:
-
-    * bgcolor: [r, g, b, a] - background color of the text box
-    * bgsource: 'filename' - background image used for the background text box
-    * border: (n, e, s, w) - border used for the background image
-
-    '''
-    start = NumericProperty(0)
-    '''Start time of the annotation.
-
-    :attr:`start` is a :class:`~kivy.properties.NumericProperty` and defaults
-    to 0.
-    '''
-
-    duration = NumericProperty(1)
-    '''Duration of the annotation.
-
-    :attr:`duration` is a :class:`~kivy.properties.NumericProperty` and
-    defaults to 1.
-    '''
-
-    annotation = DictProperty({})
-
-    def on_annotation(self, instance, ann):
-        for key, value in ann.items():
-            setattr(self, key, value)
-
-
-class CMPVideoPlayer(GridLayout):
+class CMPVideoPlayer(AnchorLayout):
     '''CMPVideoPlayer class. See module documentation for more information.
     '''
 
@@ -434,37 +371,6 @@ class CMPVideoPlayer(GridLayout):
     and defaults to 'atlas://data/images/defaulttheme/audio-volume-muted'.
     '''
 
-    annotations = StringProperty('')
-    '''If set, it will be used for reading annotations box.
-
-    :attr:`annotations` is a :class:`~kivy.properties.StringProperty`
-    and defaults to ''.
-    '''
-
-    fullscreen = BooleanProperty(False)
-    '''Switch to fullscreen view. This should be used with care. When
-    activated, the widget will remove itself from its parent, remove all
-    children from the window and will add itself to it. When fullscreen is
-    unset, all the previous children are restored and the widget is restored to
-    its previous parent.
-
-    .. warning::
-
-        The re-add operation doesn't care about the index position of it's
-        children within the parent.
-
-    :attr:`fullscreen` is a :class:`~kivy.properties.BooleanProperty`
-    and defaults to False.
-    '''
-
-    allow_fullscreen = BooleanProperty(True)
-    '''By default, you can double-tap on the video to make it fullscreen. Set
-    this property to False to prevent this behavior.
-
-    :attr:`allow_fullscreen` is a :class:`~kivy.properties.BooleanProperty`
-    defaults to True.
-    '''
-
     options = DictProperty({})
     '''Optional parameters can be passed to a :class:`~kivy.uix.video.Video`
     instance with this property.
@@ -473,36 +379,73 @@ class CMPVideoPlayer(GridLayout):
     defaults to {}.
     '''
     
+    control_timeout = NumericProperty(3)
+    
     mediaplayer = ObjectProperty()
 
     # internals
     container = ObjectProperty(None)
+    controls = ObjectProperty(None)
 
     _video_load_ev = None
 
     def __init__(self, **kwargs):
         self._video = None
         self._image = None
-        self._annotations = ''
-        self._annotations_labels = []
         super(CMPVideoPlayer, self).__init__(**kwargs)
         self._load_thumbnail()
-        self._load_annotations()
 
         if self.source:
             self._trigger_video_load()
+        
+        self._control_shown = True
+        self._control_animation = None
+        self._control_timeout_clock = Clock.schedule_once(self._on_control_timeout, self.control_timeout)
+    
+    def _on_control_timeout(self, dt):
+        if self._control_shown:
+            self._control_shown = False
 
+            if self._control_animation: self._control_animation.cancel()
+            self._control_animation = Animation(opacity = 0, d = 0.25, t = 'linear')
+            self._control_animation.on_complete = self._control_anim_complete
+            self._control_animation.start(self.controls)
+
+            Window.show_cursor = False
+        
+    def on_motion(self, *args):
+        if self._control_shown:
+            self._control_timeout_clock.cancel()
+            self._control_timeout_clock = Clock.schedule_once(self._on_control_timeout, self.control_timeout)
+        
+        else:
+            self._control_shown = True
+            
+            if self._control_animation: self._control_animation.cancel()
+            self._control_animation = Animation(opacity = 1, d = 0.25, t = 'linear')
+            self._control_animation.on_complete = self._control_anim_complete
+            self._control_animation.start(self.controls)
+
+            Window.show_cursor = True
+
+
+    def _control_anim_complete(self, a):
+        self._control_animation = None
+    
+    def stop(self):
+        self._control_timeout_clock.cancel()        
+        Window.show_cursor = True
+            
     def _trigger_video_load(self, *largs):
         ev = self._video_load_ev
         if ev is None:
-            ev = self._video_load_ev = Clock.schedule_once(self._do_video_load,
-                                                           -1)
+            ev = self._video_load_ev = Clock.schedule_once(self._do_video_load, -1)
+
         ev()
 
     def on_source(self, instance, value):
         # we got a value, try to see if we have an image for it
         self._load_thumbnail()
-        self._load_annotations()
         if self._video is not None:
             self._video.unload()
             self._video = None
@@ -526,22 +469,6 @@ class CMPVideoPlayer(GridLayout):
             thumbnail = filename[0] + '.png'
         self._image = CMPVideoPlayerPreview(source=thumbnail, video=self)
         self.container.add_widget(self._image)
-
-    def _load_annotations(self):
-        if not self.container:
-            return
-        self._annotations_labels = []
-        annotations = self.annotations
-        if not annotations:
-            filename = self.source.rsplit('.', 1)
-            annotations = filename[0] + '.jsa'
-        if exists(annotations):
-            with open(annotations, 'r') as fd:
-                self._annotations = load(fd)
-        if self._annotations:
-            for ann in self._annotations:
-                self._annotations_labels.append(
-                    CMPVideoPlayerAnnotation(annotation=ann))
 
     def on_state(self, instance, value):
         if self._video is not None:
@@ -569,19 +496,6 @@ class CMPVideoPlayer(GridLayout):
             return
         self._video.volume = value
 
-    def on_position(self, instance, value):
-        labels = self._annotations_labels
-        if not labels:
-            return
-        for label in labels:
-            start = label.start
-            duration = label.duration
-            if start > value or (start + duration) < value:
-                if label.parent:
-                    label.parent.remove_widget(label)
-            elif label.parent is None:
-                self.container.add_widget(label)
-
     def seek(self, percent):
         '''Change the position to a percentage of the duration. Percentage must
         be a value between 0-1.
@@ -601,58 +515,5 @@ class CMPVideoPlayer(GridLayout):
     def on_touch_down(self, touch):
         if not self.collide_point(*touch.pos):
             return False
-        if touch.is_double_tap and self.allow_fullscreen:
-            self.fullscreen = not self.fullscreen
-            return True
+        
         return super(CMPVideoPlayer, self).on_touch_down(touch)
-
-    def on_fullscreen(self, instance, value):
-        window = self.get_parent_window()
-        if not window:
-            Logger.warning('CMPVideoPlayer: Cannot switch to fullscreen, '
-                           'window not found.')
-            if value:
-                self.fullscreen = False
-            return
-        if not self.parent:
-            Logger.warning('CMPVideoPlayer: Cannot switch to fullscreen, '
-                           'no parent.')
-            if value:
-                self.fullscreen = False
-            return
-
-        if value:
-            self._fullscreen_state = state = {
-                'parent': self.parent,
-                'pos': self.pos,
-                'size': self.size,
-                'pos_hint': self.pos_hint,
-                'size_hint': self.size_hint,
-                'window_children': window.children[:]}
-
-            # remove all window children
-            for child in window.children[:]:
-                window.remove_widget(child)
-
-            # put the video in fullscreen
-            if state['parent'] is not window:
-                state['parent'].remove_widget(self)
-            window.add_widget(self)
-
-            # ensure the video widget is in 0, 0, and the size will be
-            # readjusted
-            self.pos = (0, 0)
-            self.size = (100, 100)
-            self.pos_hint = {}
-            self.size_hint = (1, 1)
-        else:
-            state = self._fullscreen_state
-            window.remove_widget(self)
-            for child in state['window_children']:
-                window.add_widget(child)
-            self.pos_hint = state['pos_hint']
-            self.size_hint = state['size_hint']
-            self.pos = state['pos']
-            self.size = state['size']
-            if state['parent'] is not window:
-                state['parent'].add_widget(self)

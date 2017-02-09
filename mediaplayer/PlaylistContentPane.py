@@ -12,7 +12,7 @@ from kivy.uix.label import Label
 from kivy.uix.image import AsyncImage
 from kivy.properties import BooleanProperty, NumericProperty, StringProperty, ListProperty, ObjectProperty
 from kivy.uix.recycleboxlayout import RecycleBoxLayout
-from kivy.uix.behaviors import FocusBehavior
+from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.boxlayout import BoxLayout
 
@@ -64,14 +64,12 @@ Builder.load_string('''
         size_hint_y: None
         height: self.minimum_height
         orientation: 'vertical'
-        multiselect: False
-        touch_multiselect: False
 '''.format(settings))
 
 
-class PlaylistContentLayout(FocusBehavior, LayoutSelectionBehavior, RecycleBoxLayout): pass
+class PlaylistContentLayout(RecycleBoxLayout): pass
 
-class PlaylistContentItem(RecycleDataViewBehavior, BoxLayout):
+class PlaylistContentItem(ButtonBehavior, RecycleDataViewBehavior, BoxLayout):
     title = StringProperty()
     thumburi = StringProperty()
     type = StringProperty()
@@ -79,29 +77,9 @@ class PlaylistContentItem(RecycleDataViewBehavior, BoxLayout):
     tags = ListProperty()
     uri = StringProperty()
     mediaplayer = ObjectProperty()
-    
-    index = None
-    selected = BooleanProperty(False)
-    selectable = BooleanProperty(True)
 
-    def refresh_view_attrs(self, rv, index, data):
-        ''' Catch and handle the view changes '''
-        self.index = index
-        return super(PlaylistContentItem, self).refresh_view_attrs(rv, index, data)
-
-    def on_touch_down(self, touch):
-        ''' Add selection on touch down '''
-        if super(PlaylistContentItem, self).on_touch_down(touch):
-            return True
-        if self.collide_point(*touch.pos) and self.selectable:
-            return self.parent.select_with_touch(self.index, touch)
-
-    def apply_selection(self, rv, index, is_selected):
-        # TODO seems this is getting called even at times when not selected: when an item in a view has been selected previously and an item in a different view is selected, this gets called for some reason.
-    
-        self.selected = is_selected
-        if is_selected:
-            self.mediaplayer.play_media(self.uri)
+    def on_release(self):
+        self.mediaplayer.play_media(self.uri)
 
 
 class PlaylistContentPane(RecycleView):
@@ -151,7 +129,7 @@ class PlaylistContentPane(RecycleView):
         self.data = []
 
         if self.mediaplayer.current_playlist == 'special_all_media':
-            for item in self.meteor.find('media'): self.add_data_item(item)
+            for item in self.meteor.find('media'): self.add_data_item(dict(item))
         
         else:
             playlist = self.meteor.find_one('mediaplaylists', selector = {'_id': self.mediaplayer.current_playlist})
@@ -159,14 +137,14 @@ class PlaylistContentPane(RecycleView):
 
             for _id in contents:
                 item = self.meteor.find_one('media', selector = {'_id': _id})
-                self.add_data_item(item)
+                self.add_data_item(dict(item))
         
         self.data_sort()
         self.refresh_from_data()
     
     def added(self, _id, fields):
         if _id == self.mediaplayer.current_playlist or self.mediaplayer.current_playlist == 'special_all_media':
-            new_data = dict(fields)
+            new_data = fields
             new_data['_id'] = _id
 
             self.add_data_item(new_data)

@@ -25,8 +25,8 @@ class MenuBarContent(ActionView):
         self.add_widget(ActionPrevious(with_previous = False))
         self.add_widget(ActionOverflow())
         
-        self.shuffle = ActionToggleButton(text = settings.icon_wrap.format('') + ' Shuffle', **button_settings)
-        self.fullscreen = ActionToggleButton(text = settings.icon_wrap.format(' ') + ' Fullscreen', **button_settings)
+        self.shuffle = ActionToggleButton(text = settings.icon_shuffle + ' Shuffle', **button_settings)
+        self.fullscreen = ActionToggleButton(text = settings.icon_fullscreen + ' Fullscreen', **button_settings)
         
         self.add_widget(self.shuffle)
         self.add_widget(self.fullscreen)

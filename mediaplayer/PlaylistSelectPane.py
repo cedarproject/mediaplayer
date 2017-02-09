@@ -66,6 +66,7 @@ class PlaylistSelectPane(RecycleView):
         self.mediaplayer = mediaplayer
         
         self.all_media = {'_id': 'special_all_media', 'title': 'All Media'}
+        
         self.data = [self.all_media]
         
     def get_index_from_id(self, _id):

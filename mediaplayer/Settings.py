@@ -5,4 +5,11 @@ class settings:
     
     icon_font = '/usr/share/fonts/fontawesome/FontAwesome.otf'
     icon_size = 32
-    icon_wrap = '[font=' + icon_font + '][size=' + str(icon_size) + ']{}[/size][/font]'
+
+    icon_wrap = lambda i, s = icon_size, f = icon_font: '[font={}][size={}]{}[/size][/font]'.format(f, s, i)
+    
+    icon_play = icon_wrap('')
+    icon_pause = icon_wrap('')
+    icon_close = icon_wrap('', icon_size * 2)
+    icon_shuffle = icon_wrap('')
+    icon_fullscreen = icon_wrap('')
