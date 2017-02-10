@@ -4,12 +4,14 @@ from json import load
 from os.path import exists
 from kivy.properties import ObjectProperty, StringProperty, BooleanProperty, NumericProperty, DictProperty, OptionProperty
 from kivy.animation import Animation
-from kivy.uix.gridlayout import GridLayout
+from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.progressbar import ProgressBar
 from kivy.uix.label import Label
 from kivy.uix.video import Video
+from kivy.core.audio import SoundLoader
+from kivy.uix.image import AsyncImage
 from kivy.uix.video import Image
 from kivy.factory import Factory
 from kivy.logger import Logger
@@ -21,18 +23,6 @@ from kivy.core.window import Window
 from .Settings import settings
 
 Builder.load_string('''
-<CMPVideoPlayerPreview>:
-    pos_hint: {{'x': 0, 'y': 0}}
-    image_overlay_play: 'atlas://data/images/defaulttheme/player-play-overlay'
-    image_loading: 'data/images/image-loading.gif'
-    Image:
-        source: root.source
-        color: (.5, .5, .5, 1)
-        pos_hint: {{'x': 0, 'y': 0}}
-    Image:
-        source: root.image_overlay_play if not root.click_done else root.image_loading
-        pos_hint: {{'x': 0, 'y': 0}}
-
 <CMPVideoPlayer>:
     container: container
     controls: controls
@@ -91,7 +81,26 @@ Builder.load_string('''
                     max: max(root.duration, root.position, 1)
                     value: root.position
 
+<CMPAudioInfo>:
+    id: info
+    spacing: 16
+
+    AsyncImage:
+        source: info.thumburi
+        allow_stretch: True
+
+    Label:
+        text: info.title
+        color: (1, 1, 1, 1)
+        font_name: '{settings.font}'
+        font_size: {settings.font_size} * 2
+        halign: 'center'
+        valign: 'center'
 '''.format(settings = settings))
+
+class CMPAudioInfo(BoxLayout):
+    thumburi = StringProperty()
+    title = StringProperty()
 
 class CMPVideoPlayerPlayPause(Label):
     video = ObjectProperty(None)
@@ -202,184 +211,22 @@ class CMPVideoPlayerProgressBar(ProgressBar):
         else:
             self._show_bubble()
 
-
-class CMPVideoPlayerPreview(FloatLayout):
-    source = ObjectProperty(None)
-    video = ObjectProperty(None)
-    click_done = BooleanProperty(False)
-
-    def on_touch_down(self, touch):
-        if self.collide_point(*touch.pos) and not self.click_done:
-            self.click_done = True
-            self.video.state = 'play'
-        return True
-
-
 class CMPVideoPlayer(AnchorLayout):
-    '''CMPVideoPlayer class. See module documentation for more information.
-    '''
-
     source = StringProperty('')
-    '''Source of the video to read.
-
-    :attr:`source` is a :class:`~kivy.properties.StringProperty` and
-    defaults to ''.
-
-    .. versionchanged:: 1.4.0
-    '''
-
-    thumbnail = StringProperty('')
-    '''Thumbnail of the video to show. If None, CMPVideoPlayer will try to find
-    the thumbnail from the :attr:`source` + '.png'.
-
-    :attr:`thumbnail` a :class:`~kivy.properties.StringProperty` and defaults
-    to ''.
-
-    .. versionchanged:: 1.4.0
-    '''
 
     duration = NumericProperty(-1)
-    '''Duration of the video. The duration defaults to -1 and is set to the
-    real duration when the video is loaded.
-
-    :attr:`duration` is a :class:`~kivy.properties.NumericProperty` and
-    defaults to -1.
-    '''
 
     position = NumericProperty(0)
-    '''Position of the video between 0 and :attr:`duration`. The position
-    defaults to -1 and is set to the real position when the video is loaded.
-
-    :attr:`position` is a :class:`~kivy.properties.NumericProperty` and
-    defaults to -1.
-    '''
 
     volume = NumericProperty(1.0)
-    '''Volume of the video in the range 0-1. 1 means full volume and 0 means
-    mute.
-
-    :attr:`volume` is a :class:`~kivy.properties.NumericProperty` and defaults
-    to 1.
-    '''
 
     state = OptionProperty('stop', options=('play', 'pause', 'stop'))
-    '''String, indicates whether to play, pause, or stop the video::
-
-        # start playing the video at creation
-        video = CMPVideoPlayer(source='movie.mkv', state='play')
-
-        # create the video, and start later
-        video = CMPVideoPlayer(source='movie.mkv')
-        # and later
-        video.state = 'play'
-
-    :attr:`state` is an :class:`~kivy.properties.OptionProperty` and defaults
-    to 'stop'.
-    '''
 
     play = BooleanProperty(False)
-    '''
-    .. deprecated:: 1.4.0
-        Use :attr:`state` instead.
-
-    Boolean, indicates whether the video is playing or not. You can start/stop
-    the video by setting this property::
-
-        # start playing the video at creation
-        video = CMPVideoPlayer(source='movie.mkv', play=True)
-
-        # create the video, and start later
-        video = CMPVideoPlayer(source='movie.mkv')
-        # and later
-        video.play = True
-
-    :attr:`play` is a :class:`~kivy.properties.BooleanProperty` and defaults
-    to False.
-    '''
-
-    image_overlay_play = StringProperty(
-        'atlas://data/images/defaulttheme/player-play-overlay')
-    '''Image filename used to show a "play" overlay when the video has not yet
-    started.
-
-    :attr:`image_overlay_play` is a
-    :class:`~kivy.properties.StringProperty` and
-    defaults to 'atlas://data/images/defaulttheme/player-play-overlay'.
-
-    '''
-
-    image_loading = StringProperty('data/images/image-loading.gif')
-    '''Image filename used when the video is loading.
-
-    :attr:`image_loading` is a :class:`~kivy.properties.StringProperty` and
-    defaults to 'data/images/image-loading.gif'.
-    '''
-
-    image_play = StringProperty(
-        'atlas://data/images/defaulttheme/media-playback-start')
-    '''Image filename used for the "Play" button.
-
-    :attr:`image_play` is a :class:`~kivy.properties.StringProperty` and
-    defaults to 'atlas://data/images/defaulttheme/media-playback-start'.
-    '''
-
-    image_stop = StringProperty(
-        'atlas://data/images/defaulttheme/media-playback-stop')
-    '''Image filename used for the "Stop" button.
-
-    :attr:`image_stop` is a :class:`~kivy.properties.StringProperty` and
-    defaults to 'atlas://data/images/defaulttheme/media-playback-stop'.
-    '''
-
-    image_pause = StringProperty(
-        'atlas://data/images/defaulttheme/media-playback-pause')
-    '''Image filename used for the "Pause" button.
-
-    :attr:`image_pause` is a :class:`~kivy.properties.StringProperty` and
-    defaults to 'atlas://data/images/defaulttheme/media-playback-pause'.
-    '''
-
-    image_volumehigh = StringProperty(
-        'atlas://data/images/defaulttheme/audio-volume-high')
-    '''Image filename used for the volume icon when the volume is high.
-
-    :attr:`image_volumehigh` is a :class:`~kivy.properties.StringProperty` and
-    defaults to 'atlas://data/images/defaulttheme/audio-volume-high'.
-    '''
-
-    image_volumemedium = StringProperty(
-        'atlas://data/images/defaulttheme/audio-volume-medium')
-    '''Image filename used for the volume icon when the volume is medium.
-
-    :attr:`image_volumemedium` is a :class:`~kivy.properties.StringProperty`
-    and defaults to 'atlas://data/images/defaulttheme/audio-volume-medium'.
-    '''
-
-    image_volumelow = StringProperty(
-        'atlas://data/images/defaulttheme/audio-volume-low')
-    '''Image filename used for the volume icon when the volume is low.
-
-    :attr:`image_volumelow` is a :class:`~kivy.properties.StringProperty`
-    and defaults to 'atlas://data/images/defaulttheme/audio-volume-low'.
-    '''
-
-    image_volumemuted = StringProperty(
-        'atlas://data/images/defaulttheme/audio-volume-muted')
-    '''Image filename used for the volume icon when the volume is muted.
-
-    :attr:`image_volumemuted` is a :class:`~kivy.properties.StringProperty`
-    and defaults to 'atlas://data/images/defaulttheme/audio-volume-muted'.
-    '''
 
     options = DictProperty({})
-    '''Optional parameters can be passed to a :class:`~kivy.uix.video.Video`
-    instance with this property.
-
-    :attr:`options` a :class:`~kivy.properties.DictProperty` and
-    defaults to {}.
-    '''
     
-    control_timeout = NumericProperty(3)
+    control_timeout = NumericProperty(2)
     
     mediaplayer = ObjectProperty()
 
@@ -390,23 +237,31 @@ class CMPVideoPlayer(AnchorLayout):
     _video_load_ev = None
 
     def __init__(self, **kwargs):
+        self.mediaplayer = kwargs['mediaplayer']
+        self.playlist = kwargs['playlist']
+        self.index = kwargs['index']
+        
+        del kwargs['mediaplayer'], kwargs['playlist'], kwargs['index']
+    
         self._video = None
+        self._audio = None
         self._image = None
-        super(CMPVideoPlayer, self).__init__(**kwargs)
-        self._load_thumbnail()
 
-        if self.source:
-            self._trigger_video_load()
+        self._audio_position_update_handle = None
+
+        super(CMPVideoPlayer, self).__init__(**kwargs)
         
         self._control_shown = True
         self._control_animation = None
         self._control_timeout_clock = Clock.schedule_once(self._on_control_timeout, self.control_timeout)
+        
+        self.load_media(self.playlist[self.index])
     
     def _on_control_timeout(self, dt):
         if self._control_shown:
             self._control_shown = False
 
-            if self._control_animation: self._control_animation.cancel()
+            if self._control_animation: self._control_animation.cancel(self.controls)
             self._control_animation = Animation(opacity = 0, d = 0.25, t = 'linear')
             self._control_animation.on_complete = self._control_anim_complete
             self._control_animation.start(self.controls)
@@ -421,7 +276,7 @@ class CMPVideoPlayer(AnchorLayout):
         else:
             self._control_shown = True
             
-            if self._control_animation: self._control_animation.cancel()
+            if self._control_animation: self._control_animation.cancel(self.controls)
             self._control_animation = Animation(opacity = 1, d = 0.25, t = 'linear')
             self._control_animation.on_complete = self._control_anim_complete
             self._control_animation.start(self.controls)
@@ -433,84 +288,115 @@ class CMPVideoPlayer(AnchorLayout):
         self._control_animation = None
     
     def stop(self):
+        self.remove_current()
         self._control_timeout_clock.cancel()        
         Window.show_cursor = True
-            
-    def _trigger_video_load(self, *largs):
-        ev = self._video_load_ev
-        if ev is None:
-            ev = self._video_load_ev = Clock.schedule_once(self._do_video_load, -1)
-
-        ev()
-
-    def on_source(self, instance, value):
-        # we got a value, try to see if we have an image for it
-        self._load_thumbnail()
-        if self._video is not None:
+    
+    def prev(self):
+        if self.index == 0:
+            self.seek(0)
+            return
+        
+        else:
+            self.index -= 1
+            self.load_media(self.playlist[self.index])
+    
+    def next(self):
+        # TODO handle loop all logic
+        
+        if self.index == len(self.playlist) - 1:
+            self.stop()
+        else:
+            self.index += 1
+            self.load_media(self.playlist[self.index])
+    
+    def eos(self, *args):
+        # TODO handle loop one logic
+        print('eos!')
+        self.next()
+    
+    def remove_current(self):
+        if self._video:
             self._video.unload()
             self._video = None
-        if value:
-            self._trigger_video_load()
+        if self._audio:
+            self._audio.unload()
+            self._audio = None
 
-    def on_image_overlay_play(self, instance, value):
-        self._image.image_overlay_play = value
+        if self._audio_position_update_handle:
+            self._audio_position_update_handle.cancel()
+            self._audio_position_update_handle = None
 
-    def on_image_loading(self, instance, value):
-        self._image.image_loading = value
-
-    def _load_thumbnail(self):
-        if not self.container:
-            return
         self.container.clear_widgets()
-        # get the source, remove extension, and use png
-        thumbnail = self.thumbnail
-        if not thumbnail:
-            filename = self.source.rsplit('.', 1)
-            thumbnail = filename[0] + '.png'
-        self._image = CMPVideoPlayerPreview(source=thumbnail, video=self)
-        self.container.add_widget(self._image)
+    
+    def load_media(self, media):
+        self.remove_current()
+        
+        if media['type'] == 'video':
+            self._video = Video(
+                source = media['uri'], state = 'play',
+                volume = self.volume, pos_hint = {'x': 0, 'y': 0},
+                **self.options
+            )
+            
+            self._video.bind(
+                duration = self.setter('duration'),
+                position = self.setter('position'),
+                state = self._set_state,
+                eos = self.eos
+             )
+
+            self.container.add_widget(self._video)
+          
+        if media['type'] == 'audio':
+            self.container.add_widget(CMPAudioInfo(thumburi = media['thumburi'], title = media['title']))
+        
+            self._audio = SoundLoader.load(media['uri'])
+            
+            self.duration = media['duration']
+            
+            self._audio.bind(
+                state = self._set_state
+            )
+            
+            self.audio_position_update_handle = Clock.schedule_interval(self._audio_position_update, 0.25)
+            
+            self._audio.load()
+            self._audio.play()
+    
+    def _audio_position_update(self, dt):
+        if self._audio and self._audio.state == 'play':
+            self.position = self._audio.get_pos()
+            print('position: {} duration: {} remaining: {}'.format(self.position, self.duration, self.duration - self.position))
 
     def on_state(self, instance, value):
-        if self._video is not None:
+        if self._video:
             self._video.state = value
+
+        elif self._audio:
+            if value == 'play':
+                self._audio.play()
+                self._audio.seek(self.position)
+                
+            elif value == 'pause': self._audio.stop()
+            
+            elif value == 'stop':
+                if self.duration - self.position < 0.5: self.eos()
 
     def _set_state(self, instance, value):
         self.state = value
-
-    def _do_video_load(self, *largs):
-        self._video = Video(source=self.source, state=self.state,
-                            volume=self.volume, pos_hint={'x': 0, 'y': 0},
-                            **self.options)
-        self._video.bind(texture=self._play_started,
-                         duration=self.setter('duration'),
-                         position=self.setter('position'),
-                         volume=self.setter('volume'),
-                         state=self._set_state)
 
     def on_play(self, instance, value):
         value = 'play' if value else 'stop'
         return self.on_state(instance, value)
 
-    def on_volume(self, instance, value):
-        if not self._video:
-            return
-        self._video.volume = value
-
     def seek(self, percent):
-        '''Change the position to a percentage of the duration. Percentage must
-        be a value between 0-1.
-
-        .. warning::
-
-            Calling seek() before video is loaded has no effect.
-        '''
-        if not self._video:
-            return
-        self._video.seek(percent)
-
-    def _play_started(self, instance, value):
-        self.container.clear_widgets()
-        self.container.add_widget(self._video)
+        if self._video:
+            self._video.seek(percent)
+        
+        if self._audio:
+            target = self.duration * percent
+            self._audio.seek(target)
 
     def on_touch_down(self, touch):
         if not self.collide_point(*touch.pos):

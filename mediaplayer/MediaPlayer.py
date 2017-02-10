@@ -118,8 +118,11 @@ class MediaPlayer(App):
     def on_motion(self, *args):
         if self.player: self.player.on_motion(*args)
     
-    def play_media(self, uri):
-        self.player = VideoPlayer(mediaplayer = self, source = uri, state = 'play', options = {'allow_stretch': True})
+    def play_media(self, index):
+        self.player = VideoPlayer(
+            mediaplayer = self, playlist = self.playlistcontent.data, index = index,
+            state = 'play', options = {'allow_stretch': True}
+        )
 
         self.master.remove_widget(self.menucontainer)
         self.master.add_widget(self.player)

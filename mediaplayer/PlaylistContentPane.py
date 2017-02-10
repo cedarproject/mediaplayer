@@ -48,7 +48,7 @@ Builder.load_string('''
             halign: 'left'
     
         Label:
-            text: item.type + item.duration + '    ' + ', '.join(('"' + tag + '"' for tag in item.tags))
+            text: item.type + item.duration_formatted + '    ' + ', '.join(('"' + tag + '"' for tag in item.tags))
             font_name: '{0.font}'
             font_size: {0.font_size}
             text_size: labels.width, None
@@ -73,13 +73,16 @@ class PlaylistContentItem(ButtonBehavior, RecycleDataViewBehavior, BoxLayout):
     title = StringProperty()
     thumburi = StringProperty()
     type = StringProperty()
-    duration = StringProperty()
+    duration = NumericProperty()
+    duration_formatted = StringProperty()
     tags = ListProperty()
     uri = StringProperty()
     mediaplayer = ObjectProperty()
+    
+    index = NumericProperty()
 
     def on_release(self):
-        self.mediaplayer.play_media(self.uri)
+        self.mediaplayer.play_media(self.index)
 
 
 class PlaylistContentPane(RecycleView):
@@ -98,12 +101,14 @@ class PlaylistContentPane(RecycleView):
             
     def data_sort(self):
         if self.mediaplayer.current_playlist == 'special_all_media':
-            self.data = sorted(self.data, key = lambda m: m['title'])
+            self.data = sorted(self.data, key = lambda m: m['title'].lower())
         
         else:
             playlist = self.meteor.find_one('mediaplaylists', selector = {'_id': self.mediaplayer.current_playlist})
             contents = playlist.get('contents')
             self.data = sorted(self.data, key = lambda m: contents.index(m['_id']))
+        
+        for i, d in enumerate(self.data): d['index'] = i
     
     def add_data_item(self, new_data):
         new_data['uri'] = 'http://{}/media/static/{}'.format(self.mediaplayer.server, escape_url(new_data.get('location')))
@@ -117,9 +122,10 @@ class PlaylistContentPane(RecycleView):
             m, s = divmod(dur, 60)
             h, m = divmod(m, 60)
             
-            new_data['duration'] = ' - %d:%02d:%02d' % (h, m, s)
+            new_data['duration_formatted'] = ' - %d:%02d:%02d' % (h, m, s)
         else:
-            new_data['duration'] = ''
+            new_data['duration'] = 0
+            new_data['duration_formatted'] = ''
         
         new_data['mediaplayer'] = self.mediaplayer
         
