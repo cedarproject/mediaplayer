@@ -45,32 +45,41 @@ Builder.load_string('''
 
         AnchorLayout:
             size_hint: (1, 1)
-            anchor_x: 'right'
-            anchor_y: 'top'
-            padding: 16
-        
-            CMPVideoPlayerClose:
-                size_hint: (None, None)
-                size: self.texture_size
-                video: root
-                markup: True
-                text: "{settings.icon_close}"
-
-        AnchorLayout:
-            size_hint: (1, 1)
             anchor_x: 'center'
             anchor_y: 'bottom'
 
             GridLayout:
                 rows: 1
                 size_hint: (0.8, None)
-                height: '128dp'
+                height: 64
+                
+                canvas:
+                    Color:
+                        rgba: (0, 0, 0, 0.25)
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+                
+                CMPVideoPlayerPrev:
+                    size_hint_x: None
+                    video: root
+                    markup: True
+                    width: {settings.icon_size} * 1.5
+                    text: "{settings.icon_prev}"
 
                 CMPVideoPlayerPlayPause:
                     size_hint_x: None
                     video: root
                     markup: True
+                    width: {settings.icon_size} * 1.5
                     text: "{settings.icon_pause}" if root.state == 'play' else "{settings.icon_play}"
+
+                CMPVideoPlayerNext:
+                    size_hint_x: None
+                    video: root
+                    markup: True
+                    width: {settings.icon_size} * 1.5
+                    text: "{settings.icon_next}"
 
                 Widget:
                     size_hint_x: None
@@ -81,6 +90,13 @@ Builder.load_string('''
                     max: max(root.duration, root.position, 1)
                     value: root.position
 
+                CMPVideoPlayerClose:
+                    size_hint_x: None
+                    video: root
+                    markup: True
+                    width: {settings.icon_size} * 2
+                    text: "{settings.icon_close}"
+                    
 <CMPAudioInfo>:
     id: info
     spacing: 16
@@ -102,11 +118,16 @@ class CMPAudioInfo(BoxLayout):
     thumburi = StringProperty()
     title = StringProperty()
 
+class CMPVideoPlayerPrev(Label):
+    video = ObjectProperty(None)
+    
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos): self.video.prev()
+
 class CMPVideoPlayerPlayPause(Label):
     video = ObjectProperty(None)
 
     def on_touch_down(self, touch):
-        '''.. versionchanged:: 1.4.0'''
         if self.collide_point(*touch.pos):
             if self.video.state == 'play':
                 self.video.state = 'pause'
@@ -114,6 +135,11 @@ class CMPVideoPlayerPlayPause(Label):
                 self.video.state = 'play'
             return True
 
+class CMPVideoPlayerNext(Label):
+    video = ObjectProperty(None)
+    
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos): self.video.next()
 
 class CMPVideoPlayerClose(Label):
     video = ObjectProperty(None)
@@ -203,7 +229,7 @@ class CMPVideoPlayerProgressBar(ProgressBar):
         # fix bubble label & position
         self.bubble_label.text = '%d:%02d' % (minutes, seconds)
         self.bubble.center_x = self.x + seek * self.width
-        self.bubble.y = self.top
+        self.bubble.y = self.center[1]
 
     def _showhide_bubble(self, instance, value):
         if value == 'play':
@@ -293,26 +319,18 @@ class CMPVideoPlayer(AnchorLayout):
         Window.show_cursor = True
     
     def prev(self):
-        if self.index == 0:
-            self.seek(0)
-            return
-        
-        else:
-            self.index -= 1
-            self.load_media(self.playlist[self.index])
+        if self.index == 0: self.index = len(self.playlist) - 1
+        else: self.index -= 1
+
+        self.load_media(self.playlist[self.index])
     
     def next(self):
-        # TODO handle loop all logic
-        
-        if self.index == len(self.playlist) - 1:
-            self.stop()
-        else:
-            self.index += 1
-            self.load_media(self.playlist[self.index])
+        if self.index == len(self.playlist) - 1: self.index = 0
+        else: self.index += 1
+
+        self.load_media(self.playlist[self.index])
     
     def eos(self, *args):
-        # TODO handle loop one logic
-        print('eos!')
         self.next()
     
     def remove_current(self):
@@ -363,11 +381,13 @@ class CMPVideoPlayer(AnchorLayout):
             
             self._audio.load()
             self._audio.play()
+        
+        if media['type'] == 'image':
+            self.container.add_widget(AsyncImage(source = media['uri'], allow_stretch = True))
     
     def _audio_position_update(self, dt):
         if self._audio and self._audio.state == 'play':
             self.position = self._audio.get_pos()
-            print('position: {} duration: {} remaining: {}'.format(self.position, self.duration, self.duration - self.position))
 
     def on_state(self, instance, value):
         if self._video:

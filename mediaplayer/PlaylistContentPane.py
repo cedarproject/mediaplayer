@@ -5,6 +5,8 @@ except ImportError:
     import urllib
     def escape_url(url): return urllib.quote(url)
 
+import random
+
 from kivy.lang import Builder
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
@@ -25,7 +27,7 @@ Builder.load_string('''
     padding: (16, 8)
     spacing: 5
 
-    AsyncImage:
+    PlaylistContentImage:
         size_hint: None, 1
         pos_hint: {{'left': 0}}
         allow_stretch: True
@@ -66,6 +68,11 @@ Builder.load_string('''
         orientation: 'vertical'
 '''.format(settings))
 
+class PlaylistContentImage(AsyncImage):
+    # Workaround for an AsyncImage bug
+    def _on_source_load(self, *args, **kwargs):
+        if self._coreimage:
+            super(PlaylistContentImage, self)._on_source_load(*args, **kwargs)
 
 class PlaylistContentLayout(RecycleBoxLayout): pass
 
@@ -100,13 +107,16 @@ class PlaylistContentPane(RecycleView):
         return -1
             
     def data_sort(self):
-        if self.mediaplayer.current_playlist == 'special_all_media':
-            self.data = sorted(self.data, key = lambda m: m['title'].lower())
-        
+        if self.mediaplayer.shuffle:
+            random.shuffle(self.data)
         else:
-            playlist = self.meteor.find_one('mediaplaylists', selector = {'_id': self.mediaplayer.current_playlist})
-            contents = playlist.get('contents')
-            self.data = sorted(self.data, key = lambda m: contents.index(m['_id']))
+            if self.mediaplayer.current_playlist == 'special_all_media':
+                self.data = sorted(self.data, key = lambda m: m['title'].lower())
+            
+            else:
+                playlist = self.meteor.find_one('mediaplaylists', selector = {'_id': self.mediaplayer.current_playlist})
+                contents = playlist.get('contents')
+                self.data = sorted(self.data, key = lambda m: contents.index(m['_id']))
         
         for i, d in enumerate(self.data): d['index'] = i
     

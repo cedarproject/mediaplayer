@@ -35,7 +35,7 @@ class MediaPlayer(App):
         self.state = 'disconnected' # 'disconnected' => 'connecting' => 'loading' => 'connected'
         self.binds = {}
         
-        self.fullscreen = False
+        self.shuffle = False
         self.current_playlist = 'special_all_media'
         
         super(MediaPlayer, self).__init__(**kwargs)
@@ -120,7 +120,7 @@ class MediaPlayer(App):
     
     def play_media(self, index):
         self.player = VideoPlayer(
-            mediaplayer = self, playlist = self.playlistcontent.data, index = index,
+            mediaplayer = self, playlist = self.playlistcontent.data, index = int(index),
             state = 'play', options = {'allow_stretch': True}
         )
 
@@ -133,6 +133,14 @@ class MediaPlayer(App):
         self.master.add_widget(self.menucontainer)
 
         self.player = None
+    
+    def shuffle_pressed(self, button, value):
+        self.shuffle = True if value is 'down' else False
+        self.playlistcontent.data_sort()
+    
+    def fullscreen_pressed(self, button, value):
+        if value is 'down': Window.fullscreen = 'auto'
+        else: Window.fullscreen = 0
 
     def build_main_ui(self):        
         self.menucontainer = BoxLayout(orientation = 'vertical')
@@ -140,6 +148,9 @@ class MediaPlayer(App):
         
         self.menubar = MenuBar(size_hint = (1, 0.1))
         self.menucontainer.add_widget(self.menubar)
+        
+        self.menubar.content.shuffle.bind(state = self.shuffle_pressed)
+        self.menubar.content.fullscreen.bind(state = self.fullscreen_pressed)
         
         self.panecontainer = BoxLayout()
         self.menucontainer.add_widget(self.panecontainer)

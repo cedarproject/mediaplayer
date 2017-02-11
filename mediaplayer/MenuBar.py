@@ -8,7 +8,8 @@ class MenuBar(ActionBar):
     def __init__(self, *args, **kwargs):
         super(MenuBar, self).__init__(*args, **kwargs)
         
-        self.add_widget(MenuBarContent())
+        self.content = MenuBarContent()
+        self.add_widget(self.content)
 
 
 class MenuBarContent(ActionView):

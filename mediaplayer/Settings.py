@@ -8,8 +8,10 @@ class settings:
 
     icon_wrap = lambda i, s = icon_size, f = icon_font: '[font={}][size={}]{}[/size][/font]'.format(f, s, i)
     
+    icon_prev = icon_wrap('')
+    icon_next = icon_wrap('')
     icon_play = icon_wrap('')
     icon_pause = icon_wrap('')
-    icon_close = icon_wrap('', icon_size * 2)
+    icon_close = icon_wrap('', int(icon_size * 1.5))
     icon_shuffle = icon_wrap('')
     icon_fullscreen = icon_wrap('')
