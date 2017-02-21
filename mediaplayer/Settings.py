@@ -3,6 +3,8 @@ class settings:
     font_selected = 'Lato-Bold'
     font_size = 16
     
+    widget_defaults = {'font_name': font, 'font_size': font_size}
+    
     icon_font = '/usr/share/fonts/fontawesome/FontAwesome.otf'
     icon_size = 32
 

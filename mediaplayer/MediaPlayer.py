@@ -12,9 +12,10 @@ Config.set('input', 'mouse', 'mouse,disable_multitouch')
 Config.set('graphics', 'window_state', 'maximized')
 
 from kivy.app import App
+from kivy.metrics import cm
 from kivy.core.window import Window
-from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.floatlayout import FloatLayout
 
 import sys
 import json
@@ -22,10 +23,11 @@ import time
 
 from MeteorClient import MeteorClient
 
+from .MenuBar import MenuBar
+from .ConnectionUI import ConnectionUI
 from .PlaylistSelectPane import PlaylistSelectPane
 from .PlaylistContentPane import PlaylistContentPane
 from .VideoPlayer import CMPVideoPlayer as VideoPlayer
-from .MenuBar import MenuBar
 
 class MediaPlayer(App):
     def __init__(self, **kwargs):
@@ -42,7 +44,7 @@ class MediaPlayer(App):
         
     def connect(self, server):
         self.server = server
-        
+
         self.meteor = MeteorClient('ws://{}/websocket'.format(self.server))
 
         self.meteor.on('added', self.added)
@@ -50,12 +52,22 @@ class MediaPlayer(App):
         self.meteor.on('removed', self.removed)
         self.meteor.on('connected', self.connected)
 
+        try:
+            self.meteor.connect()
+        except Exception as e:
+            self.connectionui.do_connect_ui(error = repr(e))
+            return False
+
         self.build_main_ui()
-        self.meteor.connect()
 
         self.state = 'connecting'
         
+        return True
+        
     def connected(self):
+        self.config.set('connection', 'server', self.server)
+        self.config.write()
+
         self.state = 'loading'
         
         self.collections_ready = 0
@@ -105,7 +117,7 @@ class MediaPlayer(App):
 
     def build_config(self, config):
         config.setdefaults('connection', {
-            'servers': '',
+            'server': 'localhost:3000',
             'autoconnect': False
         })
    
@@ -142,7 +154,10 @@ class MediaPlayer(App):
         if value is 'down': Window.fullscreen = 'auto'
         else: Window.fullscreen = 0
 
-    def build_main_ui(self):        
+    def build_main_ui(self):
+        self.master.clear_widgets()
+        del self.connectionui
+        
         self.menucontainer = BoxLayout(orientation = 'vertical')
         self.master.add_widget(self.menucontainer)
         
@@ -175,7 +190,7 @@ class MediaPlayer(App):
         self.master = FloatLayout()
         self.player = None
 
-        # Hijacked until connection UI is done
-        self.connect('cedar.immanuel.crosscommunity.com:3000')
+        self.connectionui = ConnectionUI(self, pos_hint = {'center_x': .5, 'center_y': .5}, size_hint = (0.6, 0.2))
+        self.master.add_widget(self.connectionui)
         
         return self.master    
