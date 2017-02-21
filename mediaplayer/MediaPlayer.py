@@ -118,7 +118,7 @@ class MediaPlayer(App):
     def build_config(self, config):
         config.setdefaults('connection', {
             'server': 'localhost:3000',
-            'autoconnect': False
+            'autoconnect': 'no'
         })
    
     def toggle_fullscreen(self, thing, touch):        
@@ -156,7 +156,6 @@ class MediaPlayer(App):
 
     def build_main_ui(self):
         self.master.clear_widgets()
-        del self.connectionui
         
         self.menucontainer = BoxLayout(orientation = 'vertical')
         self.master.add_widget(self.menucontainer)
@@ -192,5 +191,6 @@ class MediaPlayer(App):
 
         self.connectionui = ConnectionUI(self, pos_hint = {'center_x': .5, 'center_y': .5}, size_hint = (0.6, 0.2))
         self.master.add_widget(self.connectionui)
+        self.connectionui.go()
         
         return self.master    

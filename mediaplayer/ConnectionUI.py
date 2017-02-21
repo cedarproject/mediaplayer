@@ -13,7 +13,8 @@ class ConnectionUI(GridLayout):
         
         self.mediaplayer = mediaplayer
 
-        if self.mediaplayer.config.get('connection', 'autoconnect') == True:
+    def go(self):
+        if self.mediaplayer.config.get('connection', 'autoconnect') == 'yes':
             self.do_connect(None, auto = True)
         else:
             self.do_connect_ui()

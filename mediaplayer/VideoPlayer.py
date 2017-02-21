@@ -384,6 +384,8 @@ class CMPVideoPlayer(AnchorLayout):
         
         if media['type'] == 'image':
             self.container.add_widget(AsyncImage(source = media['uri'], allow_stretch = True))
+        
+        self.state = 'play'
     
     def _audio_position_update(self, dt):
         if self._audio and self._audio.state == 'play':
