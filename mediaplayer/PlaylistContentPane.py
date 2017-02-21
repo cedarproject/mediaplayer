@@ -48,6 +48,7 @@ Builder.load_string('''
             text_size: labels.width, None
             size: self.texture_size
             halign: 'left'
+            shorten: True
     
         Label:
             text: item.type + item.duration_formatted + '    ' + ', '.join(('"' + tag + '"' for tag in item.tags))
@@ -56,6 +57,7 @@ Builder.load_string('''
             text_size: labels.width, None
             size: self.texture_size
             halign: 'left'
+            shorten: True
 
 <PlaylistContentPane>:
     viewclass: 'PlaylistContentItem'
@@ -97,7 +99,6 @@ class PlaylistContentPane(RecycleView):
         super(PlaylistContentPane, self).__init__(**kwargs)
         
         self.mediaplayer = mediaplayer
-        self.meteor = self.mediaplayer.meteor
         
         self.data = []
 
@@ -114,7 +115,7 @@ class PlaylistContentPane(RecycleView):
                 self.data = sorted(self.data, key = lambda m: m['title'].lower())
             
             else:
-                playlist = self.meteor.find_one('mediaplaylists', selector = {'_id': self.mediaplayer.current_playlist})
+                playlist = self.mediaplayer.meteor.find_one('mediaplaylists', selector = {'_id': self.mediaplayer.current_playlist})
                 contents = playlist.get('contents')
                 self.data = sorted(self.data, key = lambda m: contents.index(m['_id']))
         
@@ -145,14 +146,14 @@ class PlaylistContentPane(RecycleView):
         self.data = []
 
         if self.mediaplayer.current_playlist == 'special_all_media':
-            for item in self.meteor.find('media'): self.add_data_item(dict(item))
+            for item in self.mediaplayer.meteor.find('media'): self.add_data_item(dict(item))
         
         else:
-            playlist = self.meteor.find_one('mediaplaylists', selector = {'_id': self.mediaplayer.current_playlist})
+            playlist = self.mediaplayer.meteor.find_one('mediaplaylists', selector = {'_id': self.mediaplayer.current_playlist})
             contents = playlist.get('contents')
 
             for _id in contents:
-                item = self.meteor.find_one('media', selector = {'_id': _id})
+                item = self.mediaplayer.meteor.find_one('media', selector = {'_id': _id})
                 self.add_data_item(dict(item))
         
         self.data_sort()

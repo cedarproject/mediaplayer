@@ -18,6 +18,7 @@ Builder.load_string('''
     color: (.6, 1, .7, 1) if self.selected else (1, 1, 1, 1)
     bold: self.selected
     text: self.title
+    shorten: True
 
 <PlaylistSelectPane>:
     viewclass: 'PlaylistSelectItem'
@@ -65,7 +66,7 @@ class PlaylistSelectPane(RecycleView):
         
         self.mediaplayer = mediaplayer
         
-        self.all_media = {'_id': 'special_all_media', 'title': 'All Media'}
+        self.all_media = {'_id': 'special_all_media', 'title': 'All Media', 'mediaplayer': self.mediaplayer}
         
         self.data = [self.all_media]
         

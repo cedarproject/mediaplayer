@@ -32,6 +32,7 @@ from .VideoPlayer import CMPVideoPlayer as VideoPlayer
 class MediaPlayer(App):
     def __init__(self, **kwargs):
         self.server = None
+        self.meteor = None
         self.ready = False
 
         self.state = 'disconnected' # 'disconnected' => 'connecting' => 'loading' => 'connected'
@@ -58,7 +59,7 @@ class MediaPlayer(App):
             self.connectionui.do_connect_ui(error = repr(e))
             return False
 
-        self.build_main_ui()
+        self.load_main_ui()
 
         self.state = 'connecting'
         
@@ -154,11 +155,25 @@ class MediaPlayer(App):
         if value is 'down': Window.fullscreen = 'auto'
         else: Window.fullscreen = 0
 
-    def build_main_ui(self):
+    def load_main_ui(self):
         self.master.clear_widgets()
+        self.master.add_widget(self.menucontainer)        
         
+    def build(self):
+        self.title = 'Cedar Media Player'
+
+        # TODO make icon!        
+        #if kivy.utils.platform is 'windows':
+        #    self.icon = 'logo/logo-128x128.png'
+        #else:
+        #    self.icon = 'logo/logo-1024x1024.png'
+        
+        Window.bind(on_motion = self.on_motion, mouse_pos = self.on_motion)
+
+        self.master = FloatLayout()
+        self.player = None
+
         self.menucontainer = BoxLayout(orientation = 'vertical')
-        self.master.add_widget(self.menucontainer)
         
         self.menubar = MenuBar(size_hint = (1, 0.1))
         self.menucontainer.add_widget(self.menubar)
@@ -174,20 +189,6 @@ class MediaPlayer(App):
                 
         self.playlistcontent = PlaylistContentPane(self, size_hint = (0.7, 1))
         self.panecontainer.add_widget(self.playlistcontent)
-        
-    def build(self):
-        self.title = 'Cedar Media Player'
-
-        # TODO make icon!        
-        #if kivy.utils.platform is 'windows':
-        #    self.icon = 'logo/logo-128x128.png'
-        #else:
-        #    self.icon = 'logo/logo-1024x1024.png'
-        
-        Window.bind(on_motion = self.on_motion, mouse_pos = self.on_motion)
-
-        self.master = FloatLayout()
-        self.player = None
 
         self.connectionui = ConnectionUI(self, pos_hint = {'center_x': .5, 'center_y': .5}, size_hint = (0.6, 0.2))
         self.master.add_widget(self.connectionui)
