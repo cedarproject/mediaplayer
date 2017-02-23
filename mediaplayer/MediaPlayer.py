@@ -5,6 +5,8 @@ import kivy
 kivy.require('1.9.0')
 
 import kivy.utils
+import kivy.resources
+kivy.resources.resource_add_path('fonts')
 
 from kivy.config import Config
 Config.set('kivy', 'log_level', 'debug')
@@ -21,10 +23,11 @@ import sys
 import json
 import time
 
-from MeteorClient import MeteorClient
+from .python_meteor.MeteorClient import MeteorClient
 
 from .MenuBar import MenuBar
 from .ConnectionUI import ConnectionUI
+from .NavigableBehavior import NavigableManager
 from .PlaylistSelectPane import PlaylistSelectPane
 from .PlaylistContentPane import PlaylistContentPane
 from .VideoPlayer import CMPVideoPlayer as VideoPlayer
@@ -40,6 +43,9 @@ class MediaPlayer(App):
         
         self.shuffle = False
         self.current_playlist = 'special_all_media'
+        
+        self.map_playlistselect = {}
+        self.map_playlistcontent = {}
         
         super(MediaPlayer, self).__init__(**kwargs)
         
@@ -157,7 +163,9 @@ class MediaPlayer(App):
 
     def load_main_ui(self):
         self.master.clear_widgets()
-        self.master.add_widget(self.menucontainer)        
+        self.master.add_widget(self.menucontainer)
+        
+        self.navigablemanager = NavigableManager(self)
         
     def build(self):
         self.title = 'Cedar Media Player'

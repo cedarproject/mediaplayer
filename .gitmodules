@@ -1,0 +1,3 @@
+[submodule "python-meteor"]
+	path = mediaplayer/python_meteor
+	url = https://github.com/hunternet93/python-meteor

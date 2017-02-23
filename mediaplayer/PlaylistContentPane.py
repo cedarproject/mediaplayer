@@ -18,6 +18,7 @@ from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.boxlayout import BoxLayout
 
+from .NavigableBehavior import NavigableBehavior
 from .Settings import settings
 
 Builder.load_string('''
@@ -78,7 +79,7 @@ class PlaylistContentImage(AsyncImage):
 
 class PlaylistContentLayout(RecycleBoxLayout): pass
 
-class PlaylistContentItem(ButtonBehavior, RecycleDataViewBehavior, BoxLayout):
+class PlaylistContentItem(NavigableBehavior, ButtonBehavior, RecycleDataViewBehavior, BoxLayout):
     title = StringProperty()
     thumburi = StringProperty()
     type = StringProperty()
@@ -90,6 +91,11 @@ class PlaylistContentItem(ButtonBehavior, RecycleDataViewBehavior, BoxLayout):
     
     index = NumericProperty()
 
+    def refresh_view_attrs(self, rv, index, data):
+        val = super(PlaylistContentItem, self).refresh_view_attrs(rv, index, data)
+        self.mediaplayer.map_playlistcontent[self.index] = self
+        return val
+        
     def on_release(self):
         self.mediaplayer.play_media(self.index)
 

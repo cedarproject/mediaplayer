@@ -2,11 +2,12 @@ from kivy.lang import Builder
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.label import Label
-from kivy.properties import BooleanProperty, StringProperty, ObjectProperty
+from kivy.properties import BooleanProperty, StringProperty, ObjectProperty, NumericProperty
 from kivy.uix.recycleboxlayout import RecycleBoxLayout
 from kivy.uix.behaviors import FocusBehavior
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 
+from .NavigableBehavior import NavigableBehavior
 from .Settings import settings
 
 Builder.load_string('''
@@ -35,20 +36,22 @@ Builder.load_string('''
 '''.format(settings))
 
 
-class PlaylistSelectLayout(FocusBehavior, LayoutSelectionBehavior, RecycleBoxLayout): pass
+class PlaylistSelectLayout(LayoutSelectionBehavior, RecycleBoxLayout): pass
 
-class PlaylistSelectItem(RecycleDataViewBehavior, Label):
+class PlaylistSelectItem(NavigableBehavior, RecycleDataViewBehavior, Label):
     title = StringProperty()
     mediaplayer = ObjectProperty()
 
-    index = None
+    index = NumericProperty()
     selected = BooleanProperty(False)
     selectable = BooleanProperty(True)
-
+    
     def refresh_view_attrs(self, rv, index, data):
         self.index = index
-        return super(PlaylistSelectItem, self).refresh_view_attrs(rv, index, data)
-
+        val = super(PlaylistSelectItem, self).refresh_view_attrs(rv, index, data)
+        self.mediaplayer.map_playlistselect[self.index] = self
+        return val
+        
     def on_touch_down(self, touch):
         if super(PlaylistSelectItem, self).on_touch_down(touch):
             return True
@@ -66,7 +69,7 @@ class PlaylistSelectPane(RecycleView):
         
         self.mediaplayer = mediaplayer
         
-        self.all_media = {'_id': 'special_all_media', 'title': 'All Media', 'mediaplayer': self.mediaplayer}
+        self.all_media = {'_id': 'special_all_media', 'title': 'All Media', 'mediaplayer': self.mediaplayer, 'index': 0}
         
         self.data = [self.all_media]
         
@@ -79,6 +82,8 @@ class PlaylistSelectPane(RecycleView):
         self.data.remove(self.all_media)
         self.data = sorted(self.data, key = lambda m: m['title'])
         self.data.insert(0, self.all_media)
+        
+        for index, item in enumerate(self.data): item['index'] = index
     
     def added(self, _id, fields):
         self.data.append({

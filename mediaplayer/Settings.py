@@ -5,7 +5,7 @@ class settings:
     
     widget_defaults = {'font_name': font, 'font_size': font_size}
     
-    icon_font = '/usr/share/fonts/fontawesome/FontAwesome.otf'
+    icon_font = 'FontAwesome.otf'
     icon_size = 32
 
     icon_wrap = lambda i, s = icon_size, f = icon_font: '[font={}][size={}]{}[/size][/font]'.format(f, s, i)
@@ -17,3 +17,7 @@ class settings:
     icon_close = icon_wrap('', int(icon_size * 1.5))
     icon_shuffle = icon_wrap('')
     icon_fullscreen = icon_wrap('')
+    
+    line_width_selected = 2
+    
+    color_selected = (0.1, 0.5, 0.25, 1)    
